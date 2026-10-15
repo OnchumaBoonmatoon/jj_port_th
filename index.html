@@ -180,14 +180,19 @@
                         <div class="absolute -inset-1 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-3xl blur-lg opacity-25"></div>
                         
                         <div class="relative bg-white rounded-3xl p-6 shadow-xl border border-slate-100 text-center space-y-4">
-                            <!-- Profile Avatar Image from GitHub Repository (HEIC converted to JPG dynamically) -->
-                            <div class="w-40 h-40 mx-auto rounded-2xl bg-gradient-to-br from-teal-400 to-teal-700 p-1 shadow-md relative group overflow-hidden">
+                            <!-- Profile Avatar Image from IMG_0975.HEIC (converted dynamically) -->
+                            <div class="w-48 h-48 mx-auto rounded-2xl bg-gradient-to-br from-teal-400 to-teal-700 p-1 shadow-md relative group overflow-hidden flex items-center justify-center">
+                                <!-- Loading Spinner indicator while converting HEIC -->
+                                <div id="img-loader" class="absolute inset-0 bg-slate-900/40 backdrop-blur-xs flex flex-col items-center justify-center text-white text-xs z-10 transition-opacity duration-300">
+                                    <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-1 text-teal-300"></i>
+                                    <span>กำลังโหลดรูปภาพ...</span>
+                                </div>
                                 <img id="profile-img" 
                                      src="https://raw.githubusercontent.com/OnchumaBoonmatoon/jj_port_th/main/profile.jpg" 
                                      alt="นางสาวสกนธ์วรรณ สุวรรณแสง" 
                                      onerror="this.onerror=null; this.src='https://placehold.co/400x400/0d9488/ffffff?text=Yammie';" 
                                      class="w-full h-full object-cover rounded-xl shadow-inner transition-transform duration-300 group-hover:scale-105">
-                                <span class="absolute -bottom-2 -right-2 bg-emerald-500 border-2 border-white w-7 h-7 rounded-full flex items-center justify-center text-white text-xs shadow z-10" title="พร้อมรับการศึกษาต่อ">
+                                <span class="absolute -bottom-1 -right-1 bg-emerald-500 border-2 border-white w-7 h-7 rounded-full flex items-center justify-center text-white text-xs shadow z-20" title="พร้อมรับการศึกษาต่อ">
                                     <i class="fa-solid fa-check"></i>
                                 </span>
                             </div>
@@ -675,25 +680,44 @@
         </div>
     </footer>
 
-    <!-- JavaScript Interactions -->
+    <!-- JavaScript Interactions & HEIC Image Loader -->
     <script>
         window.addEventListener('DOMContentLoaded', () => {
             const profileImg = document.getElementById('profile-img');
+            const imgLoader = document.getElementById('img-loader');
+            
+            // Raw link to the requested IMG_0975.HEIC file from GitHub
             const heicUrl = 'https://raw.githubusercontent.com/OnchumaBoonmatoon/jj_port_th/main/IMG_0975.HEIC';
 
-            // Attempt to fetch and convert HEIC image
+            // Attempt to fetch and convert HEIC image dynamically in browser
             fetch(heicUrl)
                 .then(res => {
-                    if (!res.ok) throw new Error('Failed to fetch HEIC image');
+                    if (!res.ok) throw new Error('Failed to fetch HEIC file');
                     return res.blob();
                 })
-                .then(blob => heic2any({ blob, toType: 'image/jpeg', quality: 0.85 }))
+                .then(blob => {
+                    // Convert HEIC blob to JPEG blob using heic2any library
+                    return heic2any({ 
+                        blob: blob, 
+                        toType: 'image/jpeg', 
+                        quality: 0.85 
+                    });
+                })
                 .then(conversionResult => {
                     const convertedBlob = Array.isArray(conversionResult) ? conversionResult[0] : conversionResult;
-                    profileImg.src = URL.createObjectURL(convertedBlob);
+                    const objectUrl = URL.createObjectURL(convertedBlob);
+                    profileImg.src = objectUrl;
+                    
+                    // Hide loader with smooth opacity fade
+                    if (imgLoader) {
+                        imgLoader.style.opacity = '0';
+                        setTimeout(() => imgLoader.style.display = 'none', 300);
+                    }
                 })
                 .catch(err => {
-                    console.log('Using default JPG profile image fallback:', err);
+                    console.warn('HEIC Conversion fallback used:', err);
+                    // Hide loader if fetch/conversion fails so fallback image shows cleanly
+                    if (imgLoader) imgLoader.style.display = 'none';
                 });
         });
 
@@ -712,9 +736,11 @@
         const menuBtn = document.getElementById('menu-btn');
         const mobileMenu = document.getElementById('mobile-menu');
 
-        menuBtn.addEventListener('click', () => {
-            mobileMenu.classList.toggle('hidden');
-        });
+        if (menuBtn && mobileMenu) {
+            menuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+        }
 
         // Filter Activities Functionality
         function filterActivities(category) {
@@ -727,8 +753,10 @@
                 btn.classList.add('bg-white', 'text-slate-600');
             });
 
-            event.currentTarget.classList.remove('bg-white', 'text-slate-600');
-            event.currentTarget.classList.add('bg-teal-600', 'text-white', 'shadow-sm');
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.remove('bg-white', 'text-slate-600');
+                event.currentTarget.classList.add('bg-teal-600', 'text-white', 'shadow-sm');
+            }
 
             // Show/Hide cards
             cards.forEach(card => {
